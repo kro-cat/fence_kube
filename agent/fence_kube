@@ -134,11 +134,28 @@ do_action_on() {
 	return 0
 }
 
+is_node_up() {
+	for j in 1 2 3 4 5 6 7 8 9 10
+	do
+		if ping -w1 -c1 "$1" >/dev/null 2>&1
+		then
+			sleep 1
+		else
+			return 0
+		fi
+	done
+	return 1
+}
+
 do_action_status() {
-	taints="$(>/dev/null $K get node "$(hostname)" \
-		-o jsonpath='{.spec.taints}')"
-	[ $? -ne 0 ] && return 1
-	echo "${taints}" | grep 'node.kubernetes.io/unreachable' && return 2
+	for node in $(echo "${NODENAME}" | tr ',' ' ')
+	do
+		taints="$(>/dev/null $K get node "${node}" \
+			-o jsonpath='{.spec.taints}')"
+		[ $? -ne 0 ] && return 1
+		echo "${taints}" | grep 'node.kubernetes.io/unreachable' && return 2
+		is_node_up "${node}" || return 2
+	done
 	return 0
 }
 
