@@ -135,10 +135,10 @@ do_action_on() {
 }
 
 do_action_status() {
-	off="$(>/dev/null $K get node "$(hostname)" \
-		-o jsonpath='{.spec.unschedulable}')"
+	taints="$(>/dev/null $K get node "$(hostname)" \
+		-o jsonpath='{.spec.taints}')"
 	[ $? -ne 0 ] && return 1
-	# [ "${off}" = "true" ] && return 2
+	echo "${taints}" | grep 'node.kubernetes.io/unreachable' && return 2
 	return 0
 }
 
