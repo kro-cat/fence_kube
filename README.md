@@ -22,7 +22,8 @@ $ pcs stonith level add 2 my-node-2 my-real-fence
 
 This device does not provide un-fencing ('on' action). To uncordon a kubernetes
 node, you could modify the start action of your kubelet service to uncordon the
-node after a successful startup.
+node after a successful startup. This is a workaround until I decide to
+implement a robust solution for 'on'.
 
 for systemd:
 ```ini
