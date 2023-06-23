@@ -1,0 +1,315 @@
+#!/bin/sh
+
+EXECNAME="$(basename "$0")"
+
+KUBECONFIG="/etc/kubernetes/admin.conf"
+KUBECTL="/usr/bin/kubectl"
+NODENAME="$(hostname)"
+ACTION="off"
+TIMEOUT=60
+VERBOSE=0
+
+usage() {
+	cat - <<EOF
+Usage: ${EXECNAME} [options...]
+
+Options:
+  -h, --help                           Print this message
+      --kubeconfig=PATH                Path to the kubeconfig file to use when
+                                       talking to the cluster. defaults to
+                                       "/etc/kubernetes/admin.conf"
+      --kubectl=PATH                   Path to the kubectl executable. defaults
+                                       to "/usr/bin/kubectl"
+  -n, --nodename=NODE[,NODE...]        List of node names to be fenced
+  -o, --action=ACTION                  Do fencing action ACTION
+  -t, --timeout=TIMEOUT                Timeout in seconds (default: 60)
+  -v, --verbose                        Increase message verbosity
+  -V, --version                        Show version information
+
+ACTION
+  off (default)                        Fence the node
+  on                                   Un-fence the node
+  reboot                               Reboot the node
+  monitor                              Return the fencing device status:
+                                         0 - reachable and 'on'
+                                         1 - failure
+                                         2 - reachable and 'off'
+  status                               Return the fencing status:
+                                         0 - fencing is in the 'on' state
+                                         1 - failure
+                                         2 - fencing is in the 'off' state
+  metadata                             Print fence metadata
+
+EOF
+}
+
+do_action_metadata() {
+	cat - <<EOF
+<?xml version="1.0"?>
+<resource-agent name="${EXECNAME}" shortdesc="">
+<longdesc>
+</longdesc>
+<vendor-url>
+</vendor-url>
+<parameters>
+	<parameter name="kubeconfig" unique="0" required="0">
+		<getopt mixed="    --kubeconfig=PATH" />
+		<content type="string" default="/etc/kubernetes/admin.conf" />
+		<shortdesc lang="en">
+			Path to the kubeconfig file to use when
+			talking to the cluster.
+		</shortdesc>
+	</parameter>
+	<parameter name="kubectl" unique="0" required="0">
+		<getopt mixed="    --kubectl=PATH" />
+		<content type="string" default="/usr/bin/kubectl" />
+		<shortdesc lang="en">
+			Path to the kubectl executable.
+		</shortdesc>
+	</parameter>
+	<parameter name="nodename" unique="0" required="0">
+		<getopt mixed="-n, --nodename=NODE[,NODE...]" />
+		<content type="string" />
+		<shortdesc lang="en">
+			List of node names to be fenced.
+		</shortdesc>
+	</parameter>
+	<parameter name="action" unique="0" required="0">
+		<getopt mixed="-o, --action=ACTION" />
+		<content type="string" default="off" />
+		<shortdesc lang="en">
+			Do fencing action ACTION.
+		</shortdesc>
+	</parameter>
+	<parameter name="timeout" unique="0" required="0">
+		<getopt mixed="-t, --timeout=TIMEOUT" />
+		<content type="string" default="60" />
+		<shortdesc lang="en">
+			Timeout in seconds.
+		</shortdesc>
+	</parameter>
+	<parameter name="verbose" unique="0" required="0">
+		<getopt mixed="-v, --verbose" />
+		<content type="boolean" />
+		<shortdesc lang="en">
+			Increase message verbosity.
+		</shortdesc>
+	</parameter>
+	<parameter name="version" unique="0" required="0">
+		<getopt mixed="-V, --version" />
+		<content type="boolean" />
+		<shortdesc lang="en">
+			Print version.
+		</shortdesc>
+	</parameter>
+	<parameter name="usage" unique="0" required="0">
+		<getopt mixed="-h, --help" />
+		<content type="boolean" />
+		<shortdesc lang="en">
+			Print usage.
+		</shortdesc>
+	</parameter>
+</parameters>
+<actions>
+	<action name="off" />
+	<action name="on" />
+	<action name="reboot" />
+	<action name="monitor" />
+	<action name="status" />
+	<action name="metadata" />
+</actions>
+</resource-agent>
+EOF
+}
+
+do_action_off() {
+	>/dev/null $K drain "${NODENAME}" --timeout="${TIMEOUT}s" --force \
+		--delete-emptydir-data --ignore-daemonsets || return $?
+	return 0
+}
+
+do_action_on() {
+	>/dev/null $K uncordon "${NODENAME}" || return $?
+	return 0
+}
+
+do_action_status() {
+	off="$(>/dev/null $K get node "${NODENAME}" \
+		-o jsonpath='{.spec.unschedulable}')"
+	[ $? -ne 0 ] && return 1
+	[ "${off}" = "true" ] && return 2
+	return 0
+}
+
+set_option_kubeconfig() {
+	if [ -f "$1" ]
+	then
+		KUBECONFIG="$1"
+		return 0
+	fi
+
+	>&2 echo "${EXECNAME}: no such file \"$1\""
+	return 1
+}
+
+set_option_kubectl() {
+	if [ -x "$1" ]
+	then
+		KUBECTL="$1"
+		return 0
+	fi
+
+	>&2 echo "${EXECNAME}: \"$1\" is not a valid executable"
+	return 1
+}
+
+set_option_nodename() {
+	NODENAME="$1"
+	return 0
+}
+
+set_option_action() {
+	ACTION="$1"
+	return 0
+}
+
+set_option_timeout() {
+	_TIMEOUT="$(echo "$1" | tr -cd '[:digit:]' )"
+
+	if [ "$1" = "${_TIMEOUT}" ]
+	then
+		TIMEOUT=$((${_TIMEOUT}))
+		return 0
+	fi
+
+	>&2 echo "${EXECNAME}: timeout must be a number"
+	return 1
+}
+
+set_option_verbose() {
+	_VERBOSE="$(echo "$1" | tr -cd '[:digit:]' | head -c 1)"
+
+	if [ "$1" = "${_VERBOSE}" ]
+	then
+		VERBOSE=$((${_VERBOSE}))
+		return 0
+	fi
+
+	>&2 echo "${EXECNAME}: verbose must be either 0 (off) or 1 (on)"
+	return 1
+}
+
+get_options() {
+	options=$(getopt -o hn:o:t:vV -l help,kubeconfig:,kubectl:,nodename:,action:,timeout:,verbose,version -- $@)
+	if [ $? -ne 0 ]
+	then
+		usage
+		exit 2
+	fi
+
+	eval set -- "${options}"
+
+	while :
+	do
+		case "$1" in
+			-h|--help)
+				usage
+				exit 0
+				;;
+			--kubeconfig)
+				set_option_kubeconfig "$2" || exit $?
+				shift 2
+				;;
+			--kubectl)
+				set_option_kubectl "$2" || exit $?
+				shift 2
+				;;
+			-n|--nodename)
+				set_option_nodename "$2" || exit $?
+				shift 2
+				;;
+			-o|--action)
+				set_option_action "$2" || exit $?
+				shift 2
+				;;
+			-t|--timeout)
+				set_option_timeout "$2" || exit $?
+				shift 2
+				;;
+			-v|--verbose)
+				set_option_verbose "1" || exit $?
+				shift 1
+				;;
+			-V|--version)
+				echo "${EXECNAME}, version 0.0.1"
+				exit 0
+				;;
+			*)
+				break
+				;;
+		esac
+	done
+	return 0
+}
+
+get_options_stdin() {
+	while IFS="=" read -r option value
+	do
+		case "${option}" in
+			kubeconfig)
+				set_option_kubeconfig "${value}" || exit $?
+				;;
+			kubectl)
+				set_option_kubectl "${value}" || exit $?
+				;;
+			nodename)
+				set_option_nodename "${value}" || exit $?
+				;;
+			action)
+				set_option_action "${value}" || exit $?
+				;;
+			timeout)
+				set_option_timeout "${value}" || exit $?
+				;;
+			verbose)
+				set_option_verbose "${value}" || exit $?
+				;;
+			\#*)
+				# comment
+				;;
+			*)
+				# ignore unknowns
+				;;
+		esac
+	done
+}
+
+if [ $# -ne 0 ]
+then
+	get_options $@
+else
+	get_options_stdin
+fi
+
+K="${KUBECTL} --kubeconfig=${KUBECONFIG}"
+
+case "${ACTION}" in
+	off)
+		do_action_off || exit $?
+		;;
+	on)
+		do_action_on || exit $?
+		;;
+	reboot)
+		do_action_off || exit $?
+		do_action_on || exit $?
+		;;
+	status|monitor)
+		do_action_status || exit $?
+		;;
+	metadata)
+		do_action_metadata || exit $?
+		;;
+esac
+
+exit 0
