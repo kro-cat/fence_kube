@@ -102,13 +102,6 @@ do_action_metadata() {
 			Print version.
 		</shortdesc>
 	</parameter>
-	<parameter name="usage" unique="0" required="0">
-		<getopt mixed="-h, --help" />
-		<content type="boolean" />
-		<shortdesc lang="en">
-			Print usage.
-		</shortdesc>
-	</parameter>
 </parameters>
 <actions>
 	<action name="off" />
