@@ -12,6 +12,7 @@ VERBOSE=0
 usage() {
 	cat - <<EOF
 Usage: ${EXECNAME} [options...]
+Experimental fence agent for kubernetes' nodes. Requires kubectl and a kubeconfig file with (un) cordon and drain permissions.
 
 Options:
   -h, --help                           Print this message
@@ -46,8 +47,9 @@ EOF
 do_action_metadata() {
 	cat - <<EOF
 <?xml version="1.0"?>
-<resource-agent name="${EXECNAME}" shortdesc="">
+<resource-agent name="${EXECNAME}" shortdesc="Experimental fence agent for kubernetes' nodes.">
 <longdesc>
+Experimental fence agent for kubernetes' nodes. Requires kubectl and a kubeconfig file with (un) cordon and drain permissions.
 </longdesc>
 <vendor-url>
 </vendor-url>
