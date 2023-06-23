@@ -118,18 +118,24 @@ EOF
 }
 
 do_action_off() {
-	>/dev/null $K drain "${NODENAME}" --timeout="${TIMEOUT}s" --force \
-		--delete-emptydir-data --ignore-daemonsets || return $?
+	for node in $(echo "${NODENAME}" | tr ',' ' ')
+	do
+		>/dev/null $K drain "${node}" --timeout="${TIMEOUT}s" --force \
+			--delete-emptydir-data --ignore-daemonsets || return $?
+	done
 	return 0
 }
 
 do_action_on() {
-	>/dev/null $K uncordon "${NODENAME}" || return $?
+	for node in $(echo "${NODENAME}" | tr ',' ' ')
+	do
+		>/dev/null $K uncordon "${node}" || return $?
+	done
 	return 0
 }
 
 do_action_status() {
-	off="$(>/dev/null $K get node "${NODENAME}" \
+	off="$(>/dev/null $K get node "$(hostname)" \
 		-o jsonpath='{.spec.unschedulable}')"
 	[ $? -ne 0 ] && return 1
 	[ "${off}" = "true" ] && return 2
