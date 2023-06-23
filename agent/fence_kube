@@ -116,9 +116,12 @@ EOF
 do_action_off() {
 	for node in $(echo "${NODENAME}" | tr ',' ' ')
 	do
+		>/dev/null $K cordon "${node}" || return 1
 		>/dev/null $K drain "${node}" --timeout="${TIMEOUT}s" --force \
-			--delete-emptydir-data --ignore-daemonsets || return $?
+			--delete-emptydir-data --ignore-daemonsets || return 1
 	done
+
+	# doesn't actually fence the node; return 1
 	return 1
 }
 
@@ -319,6 +322,10 @@ case "${ACTION}" in
 		;;
 	metadata)
 		do_action_metadata || exit $?
+		;;
+	*)
+		# fail if we don't support this action.
+		exit 1
 		;;
 esac
 
