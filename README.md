@@ -1,5 +1,6 @@
 # fence_kube
-Experimental fence agent for kubernetes' nodes.
+Experimental fence agent for kubernetes' nodes. [Why would I need this?](
+https://gist.github.com/kro-cat/6e5fdc46e74742ac55724533b6a0e91e)
 Requires kubectl and a kubeconfig file with (un) cordon and drain permissions
 on all nodes, which may be a security risk if done incorrectly.
 
