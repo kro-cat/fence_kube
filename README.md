@@ -11,11 +11,12 @@ always fail.
 
 ## Installing
 
-Copy [agent/fence_kube] to /usr/sbin/fence_kube and set the executable bit.
-Install a kubeconfig file with cordon/drain permissions locally on the node,
-make sure to set filesystem permissions and remember to set the kubeconfig=
-parameter (defaults to /etc/kubernetes/admin.conf) when installing this device
-in pacemaker.
+Copy [agent/fence_kube](
+https://github.com/kro-cat/fence_kube/blob/main/agent/fence_kube) to
+/usr/sbin/fence_kube and set the executable bit. Install a kubeconfig file with
+cordon/drain permissions locally on the node, make sure to set filesystem
+permissions and remember to set the kubeconfig= parameter (defaults to
+/etc/kubernetes/admin.conf) when installing this device in pacemaker.
 
 To set this up in a pacemaker cluster, add it as a stonith device; then,
 configure it as level 1 on all targets. You must also add a real stonith device
