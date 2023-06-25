@@ -1,8 +1,8 @@
 # fence_kube
 Experimental fence agent for kubernetes' nodes. [Why would I need this?](
 https://gist.github.com/kro-cat/6e5fdc46e74742ac55724533b6a0e91e)
-Requires kubectl and a kubeconfig file with (un) cordon and drain permissions
-on all nodes, which may be a security risk if done incorrectly.
+Requires kubectl and a kubeconfig file with cordon and drain permissions
+on all nodes, which may be a security risk if set up incorrectly.
 
 The point of this device is to report to kubernetes' apiserver when a node is
 being fenced out, so the pods can be rescheduled on other nodes. After
