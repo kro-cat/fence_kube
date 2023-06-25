@@ -9,7 +9,7 @@ being fenced out, so the pods can be rescheduled on other nodes. After
 cordoning and draining, this device will report failure. This device should
 always fail.
 
-##Installing
+## Installing
 
 Copy [agent/fence_kube] to /usr/sbin/fence_kube and set the executable bit.
 Install a kubeconfig file with cordon/drain permissions locally on the node,
