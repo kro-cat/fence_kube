@@ -146,11 +146,19 @@ is_node_up() {
 do_action_status() {
 	for node in $(echo "${NODENAME}" | tr ',' ' ')
 	do
-		taints="$(>/dev/null $K get node "${node}" \
-			-o jsonpath='{.spec.taints}')"
+		taints="$($K get node "${node}" -o jsonpath='{.spec.taints}')"
 		[ $? -ne 0 ] && return 1
-		echo "${taints}" | grep 'node.kubernetes.io/unreachable' && return 2
-		is_node_up "${node}" || return 2
+		if $(echo "${taints}" | grep -q 'node.kubernetes.io/unreachable')
+		then
+			>&2 echo "${node} is DOWN (marked by kubernetes)"
+			return 2
+		fi
+		if ! is_node_up "${node}"
+		then
+			>&2 echo "${node} is DOWN (ping timed out)"
+			return 2
+		fi
+		echo "${node} is UP"
 	done
 	return 0
 }
@@ -159,6 +167,7 @@ do_action_monitor() {
 	for node in $(echo "${NODENAME}" | tr ',' ' ')
 	do
 		>/dev/null $K get node "${node}" || return 1
+		echo "device for ${node} is OK"
 	done
 	return 0
 }
