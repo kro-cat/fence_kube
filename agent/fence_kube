@@ -338,26 +338,57 @@ K="${KUBECTL} --kubeconfig=${KUBECONFIG}"
 
 case "${ACTION}" in
 	off)
-		do_action_off || exit $?
+		do_action_off
+		status=$?
+		if [ ${status} -ne 0 ]
+		then
+			>&2 echo "rc = ${status}"
+			exit ${status}
+		fi
 # 		;;
 # 	on)
-# 		do_action_on || exit $?
+# 		do_action_on
  		;;
  	reboot)
- 		do_action_off || exit $?
-# 		do_action_on || exit $?
+ 		do_action_off
+		status=$?
+		if [ ${status} -ne 0 ]
+		then
+			>&2 echo "rc = ${status}"
+			exit ${status}
+		fi
+# 		do_action_on
  		;;
 	status)
-		do_action_status || exit $?
+		do_action_status
+		status=$?
+		if [ ${status} -ne 0 ]
+		then
+			>&2 echo "rc = ${status}"
+			exit ${status}
+		fi
 		;;
 	monitor)
-		do_action_monitor || exit $?
+		do_action_monitor
+		status=$?
+		if [ ${status} -ne 0 ]
+		then
+			>&2 echo "rc = ${status}"
+			exit ${status}
+		fi
 		;;
 	metadata)
-		do_action_metadata || exit $?
+		do_action_metadata
+		status=$?
+		if [ ${status} -ne 0 ]
+		then
+			>&2 echo "rc = ${status}"
+			exit ${status}
+		fi
 		;;
 	*)
 		# fail if we don't support this action.
+		>&2 echo "rc = 1"
 		exit 1
 		;;
 esac
