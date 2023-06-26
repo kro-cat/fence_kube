@@ -1,14 +1,24 @@
 # fence_kube
-Experimental fence agent for kubernetes' nodes.
-Requires kubectl and a kubeconfig file with (un) cordon and drain permissions
-on all nodes, which may be a security risk if done incorrectly.
+Experimental fence agent for kubernetes' nodes. [Why would I need this?](
+https://gist.github.com/kro-cat/6e5fdc46e74742ac55724533b6a0e91e)
+Requires kubectl and a kubeconfig file with cordon and drain permissions
+on all nodes, which may be a security risk if set up incorrectly.
 
 The point of this device is to report to kubernetes' apiserver when a node is
 being fenced out, so the pods can be rescheduled on other nodes. After
 cordoning and draining, this device will report failure. This device should
 always fail.
 
-To set this up in a pacemaker cluster, add it as a stonith device then
+## Installing
+
+Copy [agent/fence_kube](
+https://github.com/kro-cat/fence_kube/blob/main/agent/fence_kube) to
+/usr/sbin/fence_kube and set the executable bit. Install a kubeconfig file with
+cordon/drain permissions locally on the node, make sure to set filesystem
+permissions and remember to set the kubeconfig= parameter (defaults to
+/etc/kubernetes/admin.conf) when installing this device in pacemaker.
+
+To set this up in a pacemaker cluster, add it as a stonith device; then,
 configure it as level 1 on all targets. You must also add a real stonith device
 to your cluster at level 2 or higher or fencing will always fail.
 
