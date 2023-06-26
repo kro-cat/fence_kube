@@ -135,7 +135,7 @@ do_action_off() {
 # }
 
 is_node_up() {
-	for j in 1 2 3 4 5 6 7 8 9 10
+	for j in 1 2 3 4 5
 	do
 		ping -w1 -c1 "$1" >/dev/null 2>&1 && return 0
 		sleep 1
@@ -155,7 +155,17 @@ do_action_status() {
 	return 0
 }
 
+do_action_monitor() {
+	for node in $(echo "${NODENAME}" | tr ',' ' ')
+	do
+		>/dev/null $K get node "${node}" || return 1
+	done
+	return 0
+}
+
 set_option_kubeconfig() {
+	# >&2 echo "kubeconfig = ${1:-none}"
+
 	if [ -f "$1" ]
 	then
 		KUBECONFIG="$1"
@@ -167,6 +177,8 @@ set_option_kubeconfig() {
 }
 
 set_option_kubectl() {
+	# >&2 echo "kubectl = ${1:-none}"
+
 	if [ -x "$1" ]
 	then
 		KUBECTL="$1"
@@ -178,16 +190,22 @@ set_option_kubectl() {
 }
 
 set_option_nodename() {
+	# >&2 echo "nodename = ${1:-none}"
+
 	NODENAME="$1"
 	return 0
 }
 
 set_option_action() {
+	# >&2 echo "action = ${1:-none}"
+
 	ACTION="$1"
 	return 0
 }
 
 set_option_timeout() {
+	# >&2 echo "timeout = ${1:-none}"
+
 	_TIMEOUT="$(echo "$1" | tr -cd '[:digit:]' )"
 
 	if [ "$1" = "${_TIMEOUT}" ]
@@ -201,6 +219,8 @@ set_option_timeout() {
 }
 
 set_option_verbose() {
+	# >&2 echo "verbose = ${1:-none}"
+
 	_VERBOSE="$(echo "$1" | tr -cd '[:digit:]' | head -c 1)"
 
 	if [ "$1" = "${_VERBOSE}" ]
@@ -318,8 +338,11 @@ case "${ACTION}" in
  		do_action_off || exit $?
 # 		do_action_on || exit $?
  		;;
-	status|monitor)
+	status)
 		do_action_status || exit $?
+		;;
+	monitor)
+		do_action_monitor || exit $?
 		;;
 	metadata)
 		do_action_metadata || exit $?
