@@ -168,7 +168,18 @@ is_node_up() {
 do_action_status() {
 	for node in $(echo "${NODENAME}" | tr ',' ' ')
 	do
-		>/dev/null $K get node "${node}" || return 1
+		taints="$($K get node "${node}" -o jsonpath='{.spec.taints[*].key}')"
+		[ $? -ne 0 ] && return 1
+		if $(echo -n "${taints}" | grep -q 'node.kubernetes.io/unreachable')
+		then	
+			>&2 echo "device for ${node} cannot reach the node"
+			return 1
+		fi
+		if $(echo -n "${taints}" | grep -q 'node.kubernetes.io/unschedulable')
+		then	
+			>&2 echo "device for ${node} is reachable and in the OFF state"
+			return 2
+		fi
 		echo "device for ${node} is available"
 	done
 	return 0
