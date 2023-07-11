@@ -117,8 +117,9 @@ EOF
 do_action_off() {
 	for node in $(echo "${NODENAME}" | tr ',' ' ')
 	do
+		echo "attempting to fence ${node}"
 		>/dev/null $K cordon "${node}" || return 1
-		>/dev/null $K drain "${node}" --timeout="${TIMEOUT}s" --force \
+		>/dev/null $K drain "${node}" --grace-period=0 --timeout="${TIMEOUT}s" --force \
 			--delete-emptydir-data --ignore-daemonsets || return 1
 	done
 
@@ -126,13 +127,14 @@ do_action_off() {
 	return 1
 }
 
-# do_action_on() {
-# 	for node in $(echo "${NODENAME}" | tr ',' ' ')
-# 	do
-# 		>/dev/null $K uncordon "${node}" || return $?
-# 	done
-# 	return 0
-# }
+do_action_on() {
+	for node in $(echo "${NODENAME}" | tr ',' ' ')
+	do
+		echo "attempting to unfence ${node}"
+		>/dev/null $K uncordon "${node}" || return 1
+	done
+	return 0
+}
 
 is_node_up() {
 	for j in 1 2 3 4 5
@@ -352,13 +354,13 @@ K="${KUBECTL} --kubeconfig=${KUBECONFIG}"
 case "${ACTION}" in
 	off)
 		do_action_off || exit $?
-# 		;;
-# 	on)
-# 		do_action_on || exit $?
+		;;
+	on)
+		do_action_on || exit $?
  		;;
  	reboot)
  		do_action_off || exit $?
-# 		do_action_on || exit $?
+		do_action_on || exit $?
  		;;
 	status|monitor)
 		do_action_status || exit $?
