@@ -356,14 +356,15 @@ case "${ACTION}" in
 		do_action_off || exit $?
 		;;
 	on)
-		do_action_on || exit $?
+		# do_action_on || exit $?
+		exit 1
  		;;
  	reboot)
  		do_action_off || exit $?
-		do_action_on || exit $?
+		# do_action_on || exit $?
  		;;
 	monitor)
-		exit 0
+		do_action_on || exit $?
 		;;
 	status)
 		do_action_status || exit $?
