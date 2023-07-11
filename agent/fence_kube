@@ -362,7 +362,10 @@ case "${ACTION}" in
  		do_action_off || exit $?
 		do_action_on || exit $?
  		;;
-	status|monitor)
+	monitor)
+		exit 0
+		;;
+	status)
 		do_action_status || exit $?
 		;;
 	metadata)
