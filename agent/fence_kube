@@ -121,6 +121,7 @@ do_action_off() {
 		>/dev/null $K cordon "${node}" || return 1
 		>/dev/null $K drain "${node}" --grace-period=0 --timeout="${TIMEOUT}s" --force \
 			--delete-emptydir-data --ignore-daemonsets || return 1
+		$K taint node "${node}" node.kubernetes.io/unreachable:NoSchedule
 	done
 
 	# doesn't actually fence the node; return 1
