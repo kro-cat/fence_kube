@@ -128,14 +128,14 @@ do_action_off() {
 	return 1
 }
 
-do_action_on() {
-	for node in $(echo "${NODENAME}" | tr ',' ' ')
-	do
-		echo "attempting to unfence ${node}"
-		>/dev/null $K uncordon "${node}" || return 1
-	done
-	return 0
-}
+# do_action_on() {
+# 	for node in $(echo "${NODENAME}" | tr ',' ' ')
+# 	do
+# 		echo "attempting to unfence ${node}"
+# 		>/dev/null $K uncordon "${node}" || return 1
+# 	done
+# 	return 0
+# }
 
 is_node_up() {
 	for j in 1 2 3 4 5
@@ -145,28 +145,6 @@ is_node_up() {
 	done
 	return 1
 }
-
-# wrong meaning of "status" - we want the fence device status, not the fenced device status
-#
-# do_action_status() {
-# 	for node in $(echo "${NODENAME}" | tr ',' ' ')
-# 	do
-# 		taints="$($K get node "${node}" -o jsonpath='{.spec.taints}')"
-# 		[ $? -ne 0 ] && return 1
-# 		if $(echo "${taints}" | grep -q 'node.kubernetes.io/unreachable')
-# 		then
-# 			>&2 echo "${node} is DOWN (marked by kubernetes)"
-# 			return 2
-# 		fi
-# 		if ! is_node_up "${node}"
-# 		then
-# 			>&2 echo "${node} is DOWN (ping timed out)"
-# 			return 2
-# 		fi
-# 		echo "${node} is UP"
-# 	done
-# 	return 0
-# }
 
 do_action_status() {
 	for node in $(echo "${NODENAME}" | tr ',' ' ')
@@ -365,7 +343,8 @@ case "${ACTION}" in
 		# do_action_on || exit $?
  		;;
 	monitor)
-		do_action_on || exit $?
+		# do_action_on || exit $?
+		exit 0
 		;;
 	status)
 		do_action_status || exit $?
