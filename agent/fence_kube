@@ -119,10 +119,9 @@ do_action_off() {
 	do
 		echo "attempting to fence ${node}"
 		>/dev/null $K cordon "${node}" || return 1
-		>/dev/null $K drain "${node}" --grace-period=0 --timeout="60s" --force \
-			--delete-emptydir-data --ignore-daemonsets
-		>/dev/null $K drain "${node}" --grace-period=0 --timeout="${TIMEOUT}s" --force \
-			--delete-emptydir-data --ignore-daemonsets --disable-eviction || return 1
+		>/dev/null $K drain "${node}" --timeout="$((${TIMEOUT} / 2))s" --delete-emptydir-data --ignore-daemonsets
+		>/dev/null $K drain "${node}" --grace-period=0 --timeout="$((${TIMEOUT} / 2))s" --force \
+			--delete-emptydir-data --ignore-daemonsets --disable-eviction
 		$K taint node "${node}" node.kubernetes.io/unreachable:NoSchedule
 	done
 
